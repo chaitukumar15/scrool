@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat Interface</title>
+    <style>
+      /* Basic reset */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Arial', sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #eef2f5;
+        margin: 0;
+      }
+
+      .chat-container {
+        width: 100%;
+        max-width: 650px; /* Adjust the max width */
+        height: 90vh;
+        background: linear-gradient(145deg, #00c6ff, #0072ff); /* Gradient background */
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+      }
+
+      .chat-box {
+        flex: 1;
+        overflow-y: auto;
+        margin-bottom: 30px;
+        padding-right: 10px;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .chat-input-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .chat-input-container input[type="text"] {
+        width: 80%;
+        padding: 15px;
+        border: 2px solid #0072ff;
+        border-radius: 25px;
+        font-size: 16px;
+        transition: all 0.3s;
+        outline: none;
+      }
+
+      .chat-input-container input[type="text"]:focus {
+        border-color: #00c6ff;
+        box-shadow: 0 0 8px rgba(0, 198, 255, 0.6);
+      }
+
+      .chat-input-container button {
+        width: 15%;
+        padding: 15px;
+        background-color: #00c6ff;
+        color: white;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+
+      .chat-input-container button:hover {
+        background-color: #0072ff;
+      }
+
+      .message {
+        margin: 10px 0;
+        padding: 12px 18px;
+        border-radius: 25px;
+        font-size: 16px;
+        line-height: 1.4;
+        max-width: 80%;
+      }
+
+      .user-message {
+        background-color: #e1f5fe;
+        align-self: flex-end;
+        color: #0072ff;
+      }
+
+      .model-message {
+        background-color: #f1f1f1;
+        align-self: flex-start;
+        color: #333;
+      }
+
+      /* Larger Loading Animation */
+      .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 15px;
+        margin-bottom: 15px;
+      }
+
+      .loading .ball {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background-color: #0072ff;
+        margin: 0 10px;
+        animation: bounce 1.5s infinite ease-in-out;
+      }
+
+      .loading .ball:nth-child(1) {
+        animation-delay: 0s;
+      }
+
+      .loading .ball:nth-child(2) {
+        animation-delay: 0.3s;
+      }
+
+      .loading .ball:nth-child(3) {
+        animation-delay: 0.6s;
+      }
+
+      @keyframes bounce {
+        0%, 100% {
+          transform: translateY(0);
+          background-color: #00c6ff;
+        }
+        50% {
+          transform: translateY(-30px);
+          background-color: #0072ff;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-container">
+      <div class="chat-box" id="chat-box"></div>
+
+      <div class="chat-input-container">
+        <input type="text" id="user-input" placeholder="Type your message..." />
+        <button id="send-btn">Send</button>
+      </div>
+    </div>
+
+    <script>
+      const sendButton = document.getElementById("send-btn");
+      const userInput = document.getElementById("user-input");
+      const chatBox = document.getElementById("chat-box");
+
+      // Function to add message to chat
+      function addMessageToChat(message, sender) {
+        const messageDiv = document.createElement("div");
+        messageDiv.classList.add("message", `${sender}-message`);
+        messageDiv.textContent = message;
+        chatBox.appendChild(messageDiv);
+
+        // Scroll to the bottom of the chat box
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      // Function to clear localStorage and chat box on page load
+      window.onload = () => {
+        localStorage.removeItem("chatHistory");  // Clear saved chat history
+        chatBox.innerHTML = ""; // Clear chat box
+      };
+
+      // Save the chat history to localStorage
+      function saveChatHistory(message, sender) {
+        const history = JSON.parse(localStorage.getItem("chatHistory")) || [];
+        history.push({ message, sender });
+        localStorage.setItem("chatHistory", JSON.stringify(history));
+      }
+
+      // Add loading animation in chat container
+      function showLoadingAnimation() {
+        const loadingDiv = document.createElement("div");
+        loadingDiv.classList.add("loading");
+        loadingDiv.setAttribute("id", "loading");
+
+        for (let i = 0; i < 3; i++) {
+          const ball = document.createElement("div");
+          ball.classList.add("ball");
+          loadingDiv.appendChild(ball);
+        }
+
+        chatBox.appendChild(loadingDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function hideLoadingAnimation() {
+        const loadingDiv = document.getElementById("loading");
+        if (loadingDiv) {
+          loadingDiv.remove();
+        }
+      }
+
+      sendButton.addEventListener("click", () => {
+        const userMessage = userInput.value.trim();
+        if (userMessage === "") return;
+
+        // Add user message to chat box and save it to localStorage
+        addMessageToChat(userMessage, "user");
+        saveChatHistory(userMessage, "user");
+
+        // Show loading animation inside the chat box
+        showLoadingAnimation();
+
+        // Clear input field
+        userInput.value = "";
+
+        // Send the message to the API
+        const obj = { msg: userMessage };
+
+        fetch("https://chaitllm.onrender.com", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(obj),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            const botResponse = data.data.candidates[0].content.parts[0].text;
+
+            // Hide loading animation and display bot response
+            hideLoadingAnimation();
+            addMessageToChat(botResponse, "model");
+            saveChatHistory(botResponse, "model");
+          })
+          .catch((error) => {
+            console.error("Error fetching data:", error);
+            const errorMessage = "Sorry, there was an error. Please try again.";
+
+            // Hide loading animation and display error message
+            hideLoadingAnimation();
+            addMessageToChat(errorMessage, "model");
+            saveChatHistory(errorMessage, "model");
+          });
+      });
+    </script>
+  </body>
+</html>
